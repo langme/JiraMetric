@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Jira Metrics</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">- - - -</string>
+
+
+    <string name="numTask">Tache :</string>
+    <string name="state">Etat :</string>
+    <string name="critic">Criticité :</string>
+    <string name="type">Typologie :</string>
+    <string name="info">INF Syst :</string>
+
+    <string name="createDate">Création :</string>
+    <string name="deliverDate">Livraison :</string>
+    <string name="echeanceDate">Souhaitée :</string>
+    <string name="ecart">Ecart :</string>
+    <string name="res">Resultat :</string>
+
+    <!--CONFIGURATION-->
+    <string name="Information">Vous devez remplir les champs correspondants aux Lettres des colonnes du fichier Excel...</string>
+    <string name="nameTask">Clé :</string>
+    <string name="stateTask">Etat :</string>
+    <string name="criticity">Criticité :</string>
+    <string name="typology">Typologie :</string>
+    <string name="createTask">Création :</string>
+    <string name="validatedTask">date de livraison :</string>
+    <string name="infSystem">INF Syst.Information :</string>
+    <string name="clotureTask">date de cloture :</string>
+    <string name="wishDateTask">date de livraison souhaitée :</string>
+
+</resources>

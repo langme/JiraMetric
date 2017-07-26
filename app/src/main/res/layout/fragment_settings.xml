@@ -1,0 +1,246 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.langme.newmetrics.MySheetRecyclerViewAdapter$SettingsFragment">
+
+    <android.support.v4.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    <!-- TODO: Update blank fragment layout -->
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="@dimen/list_item_spacing">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:weightSum="1">
+
+            <TextView
+                android:id="@+id/txtinfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/Information"
+                android:layout_weight="1"/>
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:weightSum="3">
+
+            <TextView
+                android:id="@+id/txtNameTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/nameTask"
+                android:layout_weight="2"/>
+
+            <EditText
+                android:id="@+id/edtNameTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:layout_weight="1"
+                android:digits="qwertzuiopasdfghjklyxcvbnm"
+                android:hint="1 lettre"
+                android:maxLength="1"/>
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:weightSum="3">
+
+            <TextView
+                android:id="@+id/txtState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/stateTask"
+                android:layout_weight="2"/>
+
+            <EditText
+                android:id="@+id/edtState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:layout_weight="1"
+                android:digits="qwertzuiopasdfghjklyxcvbnm"
+                android:hint="1 lettre"
+                android:maxLength="1"/>
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:weightSum="3">
+
+            <TextView
+                android:id="@+id/txtCriticity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/criticity"
+                android:layout_weight="2"/>
+
+            <EditText
+                android:id="@+id/edtCriticity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:layout_weight="1"
+                android:digits="qwertzuiopasdfghjklyxcvbnm"
+                android:hint="1 lettre"
+                android:maxLength="1"/>
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:weightSum="3">
+
+            <TextView
+                android:id="@+id/txtCreateTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/createTask"
+                android:layout_weight="2"/>
+
+            <EditText
+                android:id="@+id/edtCreateTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:layout_weight="1"
+                android:digits="qwertzuiopasdfghjklyxcvbnm"
+                android:hint="1 lettre"
+                android:maxLength="1"/>
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:weightSum="3">
+
+            <TextView
+                android:id="@+id/txtTypology"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/typology"
+                android:layout_weight="2"/>
+
+            <EditText
+                android:id="@+id/edtTypology"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:layout_weight="1"
+                android:digits="qwertzuiopasdfghjklyxcvbnm"
+                android:hint="1 lettre"
+                android:maxLength="1"/>
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:weightSum="3">
+
+            <TextView
+                android:id="@+id/txtWishDateTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/wishDateTask"
+                android:layout_weight="2"/>
+
+            <EditText
+                android:id="@+id/edtWishDateTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:layout_weight="1"
+                android:digits="qwertzuiopasdfghjklyxcvbnm"
+                android:hint="1 lettre"
+                android:maxLength="1"/>
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:weightSum="3">
+
+            <TextView
+                android:id="@+id/txtValidatedTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/validatedTask"
+                android:layout_weight="2"/>
+
+            <EditText
+                android:id="@+id/edtValidatedTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:layout_weight="1"
+                android:digits="qwertzuiopasdfghjklyxcvbnm"
+                android:hint="1 lettre"
+                android:maxLength="1"/>
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:weightSum="3">
+
+            <TextView
+                android:id="@+id/txtInfSystem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/infSystem"
+                android:layout_weight="2"/>
+
+            <EditText
+                android:id="@+id/edtInfSystem"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:layout_weight="1"
+                android:digits="qwertzuiopasdfghjklyxcvbnm"
+                android:hint="1 lettre"
+                android:maxLength="1"/>
+        </TableRow>
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:weightSum="3">
+
+            <TextView
+                android:id="@+id/txtColureTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/clotureTask"
+                android:layout_weight="2"/>
+
+            <EditText
+                android:id="@+id/edtColureTask"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:inputType="textPersonName"
+                android:layout_weight="1"
+                android:digits="qwertzuiopasdfghjklyxcvbnm"
+                android:hint="1 lettre"
+                android:maxLength="1"/>
+        </TableRow>
+    </TableLayout>
+    </android.support.v4.widget.NestedScrollView>
+</FrameLayout>

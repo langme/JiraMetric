@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.v7.widget.RecyclerView xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/listSheet"
+    android:name="com.langme.newmetrics.SheetFragment"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginLeft="@dimen/list_item_spacing_half"
+    android:layout_marginRight="@dimen/list_item_spacing_half"
+    app:layoutManager="LinearLayoutManager"
+    tools:context="com.langme.newmetrics.SheetFragment"
+    tools:listitem="@layout/fragment_sheet" />
