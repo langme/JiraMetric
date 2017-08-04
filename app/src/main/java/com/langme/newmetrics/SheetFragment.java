@@ -16,6 +16,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.langme.newmetrics.DAO.FichierDAO;
 import com.langme.newmetrics.dummy.SheetContent;
 import com.langme.newmetrics.dummy.SheetContent.SheetItem;
 
@@ -32,8 +33,9 @@ public class SheetFragment extends Fragment {
     // TODO: Customize parameters
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
-    private Context context;
-
+    private static Context context;
+    private static FichierDAO fichierDAO;
+    private static RecyclerView.Adapter adapter;
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
      * fragment (e.g. upon screen orientation changes).
@@ -41,23 +43,10 @@ public class SheetFragment extends Fragment {
     public SheetFragment() {
     }
 
-    // TODO: Customize parameter initialization
-    @SuppressWarnings("unused")
-    public static SheetFragment newInstance(int columnCount) {
-        SheetFragment fragment = new SheetFragment();
-        Bundle args = new Bundle();
-        args.putInt(ARG_COLUMN_COUNT, columnCount);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-        if (getArguments() != null) {
-            mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
-        }
     }
 
     @Override
@@ -74,10 +63,37 @@ public class SheetFragment extends Fragment {
             } else {
                 recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             }
-            recyclerView.setAdapter(new MySheetRecyclerViewAdapter(SheetContent.ITEMS, mListener));
+            adapter = new MySheetRecyclerViewAdapter(SheetContent.ITEMS, mListener);
+            recyclerView.setAdapter(adapter);
         }
         return view;
     }
+
+    public static void update(){
+        SheetContent.ITEMS.clear();
+        fichierDAO = new FichierDAO(context);
+        fichierDAO.getFile();
+        adapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        update();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        SheetContent.ITEMS.clear();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        SheetContent.ITEMS.clear();
+    }
+
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
@@ -113,6 +129,6 @@ public class SheetFragment extends Fragment {
      */
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
-        void onListFragmentInteraction(SheetItem item);
+        void onListFragmentInteraction(SheetItem item, String action);
     }
 }

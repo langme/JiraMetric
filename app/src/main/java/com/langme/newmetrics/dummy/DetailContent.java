@@ -1,6 +1,11 @@
 package com.langme.newmetrics.dummy;
 
+import android.database.Cursor;
+import android.provider.BaseColumns;
+
 import com.langme.newmetrics.Constantes;
+import com.langme.newmetrics.DAO.FichierDAO;
+import com.langme.newmetrics.DAO.TaskDAO;
 import com.langme.newmetrics.Utils;
 
 import java.io.Serializable;
@@ -24,7 +29,7 @@ public class DetailContent {
     /**
      * An array of sample (dummy) items.
      */
-    public static final List<DetailItem> ITEMS = new ArrayList<DetailItem>();
+    public static List<DetailItem> ITEMS = new ArrayList<DetailItem>();
 
     /**
      * A map of sample (dummy) items, by ID.
@@ -36,6 +41,30 @@ public class DetailContent {
         for (int i = 1; i <= 3; i++) {
             //addItem(createDummyItem(i));
         }
+    }
+
+    /**
+     * Creer un DummyItem à partir du curseur
+     * @param cursor
+     * @return
+     */
+    public static DetailContent.DetailItem createDummyItem(Cursor cursor) {
+        long id = cursor.getLong(cursor.getColumnIndex(BaseColumns._ID));
+        String name = cursor.getString(cursor.getColumnIndex(TaskDAO.COLUMN_NAME));
+        String creatDate = cursor.getString(cursor.getColumnIndex(TaskDAO.COLUMN_CREATE_DATE));
+        String delivDate = cursor.getString(cursor.getColumnIndex(TaskDAO.COLUMN_DELIVER_DATE));
+        String gapDeate = cursor.getString(cursor.getColumnIndex(TaskDAO.COLUMN_GAP_DATE));
+        String state = cursor.getString(cursor.getColumnIndex(TaskDAO.COLUMN_STATE));
+        String critic = cursor.getString(cursor.getColumnIndex(TaskDAO.COLUMN_CRITICAL));
+        String typo = cursor.getString(cursor.getColumnIndex(TaskDAO.COLUMN_TYPOLOGY));
+        String infSys = cursor.getString(cursor.getColumnIndex(TaskDAO.COLUMN_INF_SYS));
+        String clotureDate = cursor.getString(cursor.getColumnIndex(TaskDAO.COLUMN_CLOTURE_DATE));
+        String wishDate = cursor.getString(cursor.getColumnIndex(TaskDAO.COLUMN_WISH_DATE));
+        String finalState = cursor.getString(cursor.getColumnIndex(TaskDAO.COLUMN_FINAL_STATE));
+        int refFile = cursor.getInt(cursor.getColumnIndex(TaskDAO.COLUMN_NAME_REF_FILE));
+
+        return new DetailContent.DetailItem(String.valueOf(id), name, creatDate, delivDate, gapDeate,
+                state, typo, critic , infSys, clotureDate, wishDate, finalState, String.valueOf(refFile));
     }
 
     public static void addItem(DetailItem item) {
@@ -68,9 +97,11 @@ public class DetailContent {
         public final String clotureTask;
         public final String withDateTask;
         public Constantes.State finalState;
+        public final long number;
+        public final String refFile;
 
         public DetailItem(String id, String name, String create, String deliver, String ecart,
-                            String etat, String typologie, String cricicite, String info, String cloture, String wish) {
+                            String etat, String typologie, String cricicite, String info, String cloture, String wish, String finalState, String refFile) {
             this.id = id;
             this.nameTask = name;
             this.createDate = create;
@@ -82,6 +113,32 @@ public class DetailContent {
             this.infSystem = info;
             this.clotureTask = cloture;
             this.withDateTask = wish;
+            if (finalState.matches(String.valueOf(Constantes.State.CONFORME))) {
+                this.finalState = Constantes.State.CONFORME;
+            } else{
+                this.finalState = Constantes.State.NONCONFORME;
+            }
+            String[] num = name.split("-");
+            this.number = Integer.parseInt(num[1]);
+            this.refFile = refFile;
+        }
+
+        public DetailItem(String id, String name, String create, String deliver, String ecart,
+                          String etat, String typologie, String cricicite, String info, String cloture, String wish, String refFile) {
+            this.id = id;
+            this.nameTask = name;
+            this.createDate = create;
+            this.deliverDate = deliver;
+            this.ecartDate = ecart;
+            this.state = etat;
+            this.criticity = cricicite;
+            this.typology = typologie;
+            this.infSystem = info;
+            this.clotureTask = cloture;
+            this.withDateTask = wish;
+            String[] num = name.split("-");
+            this.number = Integer.parseInt(num[1]);
+            this.refFile = refFile;
         }
 
         @Override
@@ -139,6 +196,14 @@ public class DetailContent {
 
         public void setFinalState(Constantes.State finalState) {
             this.finalState = finalState;
+        }
+
+        public long getNumber() {
+            return number;
+        }
+
+        public String getRefFile() {
+            return refFile;
         }
     }
 }

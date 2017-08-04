@@ -7,4 +7,10 @@
         android:title="@string/action_settings"
         app:showAsAction="ifRoom"
         android:visible="true"/>
+    <item
+        android:id="@+id/action_import"
+        android:icon="@drawable/ic_file_download_black_24dp"
+        android:title="@string/action_import"
+        app:showAsAction="ifRoom"
+        android:visible="true"/>
 </menu>

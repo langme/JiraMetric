@@ -120,8 +120,10 @@ public class Utils {
                 newDate = date.replace(dateArray[1],"05");
                 break;
             case "jui.":
-                // attention Pour juin et juillet
                 newDate = date.replace(dateArray[1],"06");
+                break;
+            case "juil.":
+                newDate = date.replace(dateArray[1],"07");
                 break;
             case "aou.":
                 newDate = date.replace(dateArray[1],"08");
@@ -246,7 +248,7 @@ public class Utils {
                 boolean noDayOff = true;
                 for (String day : listDayOff) {
                     if (maybDayoff.matches(day)){
-                        Log.e(TAG, "getWorkingDaysBetweenTwoDates: Jour ferie : " + maybDayoff );
+                        Log.d(TAG, "getWorkingDaysBetweenTwoDates: Jour ferie : " + maybDayoff );
                         noDayOff = false;
                         break;
                     }
@@ -329,14 +331,6 @@ public class Utils {
     public static Constantes.State manageConformity(DetailContent.DetailItem item){
         Constantes.State res = Constantes.State.NONCONFORME;
 
-        if (item.getNameTask().contains("INF-15043")){
-            Log.i(TAG, "manageConformity: ");
-        }
-        if (item.getNameTask().contains("INF-15059")){
-            Log.i(TAG, "manageConformity: ");
-        }
-
-
         // 1ere phase d'analyse
         if (item.typology.matches("Execution requete") && item.infSystem.matches("SITI")){
             if (!item.ecartDate.isEmpty()) {
@@ -365,7 +359,7 @@ public class Utils {
                 }
             }
         } else {
-            if (!item.withDateTask.isEmpty()) {
+            if (!item.withDateTask.isEmpty() && !item.deliverDate.isEmpty()) {
                 SimpleDateFormat dateformat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH);
                 try {
                     Date dateEnd = dateformat.parse(item.withDateTask);
@@ -375,9 +369,10 @@ public class Utils {
                         res = Constantes.State.CONFORME;
                     }
                 } catch (Exception ex){
-                    Log.e(TAG, "manageConformity: " + ex);
+                    Log.e(TAG, "manageConformity date : " + ex);
                 }
             } else {
+                Log.v(TAG, "manageConformity item vide pour withDateTask or deliverDate");
                 res = Constantes.State.CONFORME;
             }
         }

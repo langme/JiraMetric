@@ -19,13 +19,19 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.langme.newmetrics.DAO.FichierDAO;
 import com.langme.newmetrics.SheetFragment.OnListFragmentInteractionListener;
 import com.langme.newmetrics.dummy.SheetContent;
 import com.langme.newmetrics.dummy.SheetContent.SheetItem;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static com.langme.newmetrics.Constantes.MyPREFERENCES;
@@ -39,6 +45,7 @@ public class MySheetRecyclerViewAdapter extends RecyclerView.Adapter<MySheetRecy
 
     private final List<SheetContent.SheetItem> mValues;
     private final OnListFragmentInteractionListener mListener;
+
     private Context context;
     public MySheetRecyclerViewAdapter(List<SheetContent.SheetItem> items, OnListFragmentInteractionListener listener) {
         mValues = items;
@@ -56,26 +63,60 @@ public class MySheetRecyclerViewAdapter extends RecyclerView.Adapter<MySheetRecy
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
         holder.mItem = mValues.get(position);
-        holder.mIdView.setText(mValues.get(position).id);
+
+        SimpleDateFormat dateformat = new SimpleDateFormat("dd-MM-yyyy");
+        try {
+            Date d = new Date(Long.parseLong(mValues.get(position).date));
+            holder.mIdView.setText(dateformat.format(d).toString());
+        } catch (Exception ex){
+            Log.e("onBind", "error : " + ex);
+        }
+
         holder.mNameView.setText(mValues.get(position).name);
-        holder.mDateView.setText(mValues.get(position).date);
-        holder.mContentView.setImageResource(android.R.drawable.ic_menu_search);;
+        holder.mImageSch.setImageResource(android.R.drawable.ic_menu_search);
+        holder.mImageDel.setImageResource(android.R.drawable.ic_menu_delete);
 
         if (position %2 == 0) {
-            // NON CONFORME
             holder.mRow.setBackgroundColor(context.getResources().getColor(R.color.holo_light_control_normal));
         } else {
-            // CONFORME
             holder.mRow.setBackgroundColor(context.getResources().getColor(R.color.holo_light_button_pressed));
         }
 
-        holder.mView.setOnClickListener(new View.OnClickListener() {
+        holder.mImageSch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (null != mListener) {
                     // Notify the active callbacks interface (the activity, if the
                     // fragment is attached to one) that an item has been selected.
-                    mListener.onListFragmentInteraction(holder.mItem);
+                    mListener.onListFragmentInteraction(holder.mItem, "search");
+                }
+            }
+        });
+
+        holder.mImageDel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (null != mListener) {
+                    // Notify the active callbacks interface (the activity, if the
+                    // fragment is attached to one) that an item has been selected.
+                    AlertDialog dialogue = new AlertDialog.Builder(context)
+                            .setTitle("Voulez-vous supprimer ce fichier ?")
+                            .setPositiveButton("Oui",
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int whichButton) {
+                                            // delete confirm
+                                            mListener.onListFragmentInteraction(holder.mItem, "del");
+                                        }
+                                    }
+                            )
+                            .setNegativeButton("NON",
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int whichButton) {
+                                            dialog.dismiss();
+                                        }
+                                    }
+                            ).create();
+                    dialogue.show();
                 }
             }
         });
@@ -91,9 +132,9 @@ public class MySheetRecyclerViewAdapter extends RecyclerView.Adapter<MySheetRecy
         public final LinearLayout mRow;
         public final TextView mIdView;
         public final TextView mNameView;
-        public final ImageView mContentView;
+        public final ImageView mImageSch;
+        public final ImageView mImageDel;
         public SheetContent.SheetItem mItem;
-        public final TextView mDateView;
 
         public ViewHolder(View view) {
             super(view);
@@ -101,8 +142,8 @@ public class MySheetRecyclerViewAdapter extends RecyclerView.Adapter<MySheetRecy
             mRow = (LinearLayout) view.findViewById(R.id.rowSheet);
             mIdView = (TextView) view.findViewById(R.id.id);
             mNameView = (TextView) view.findViewById(R.id.idName);
-            mDateView = (TextView) view.findViewById(R.id.idDate);
-            mContentView = (ImageView) view.findViewById(R.id.search);
+            mImageSch = (ImageView) view.findViewById(R.id.search);
+            mImageDel = (ImageView) view.findViewById(R.id.delete);
         }
 
         @Override
@@ -141,7 +182,6 @@ public class MySheetRecyclerViewAdapter extends RecyclerView.Adapter<MySheetRecy
         private String mParam2;
         private View view;
         private OnFragmentInteractionListener mListener;
-
         public SettingsFragment() {
             // Required empty public constructor
         }

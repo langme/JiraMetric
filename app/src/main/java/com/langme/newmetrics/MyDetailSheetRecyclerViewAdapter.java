@@ -40,7 +40,7 @@ public class MyDetailSheetRecyclerViewAdapter extends RecyclerView.Adapter<MyDet
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
         holder.mItem = mValues.get(position);
-        holder.mIdView.setText(mValues.get(position).id);
+        holder.mIdView.setText(String.valueOf(mValues.get(position).getNumber()));
         holder.mNameView.setText(mValues.get(position).nameTask);
         //holder.mCreateDateView.setText(mValues.get(position).createDate);
         //holder.mDeliverDateView.setText(mValues.get(position).deliverDate);

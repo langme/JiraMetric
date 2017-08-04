@@ -37,13 +37,10 @@ import java.util.List;
  * <p>You activity (or fragment) needs to implement {@link ResumeListDialogFragment.Listener}.</p>
  */
 public class ResumeListDialogFragment extends BottomSheetDialogFragment {
-
-    // TODO: Customize parameter argument names
     private static final String ARG_ITEM_COUNT = "item_count";
     private Listener mListener;
     private PieChart pieChart;
 
-    // TODO: Customize parameters
     public static ResumeListDialogFragment newInstance(int itemCount) {
         final ResumeListDialogFragment fragment = new ResumeListDialogFragment();
         final Bundle args = new Bundle();

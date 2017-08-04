@@ -1,16 +1,13 @@
 package com.langme.newmetrics.dummy;
 
-import android.os.Environment;
-import android.util.Log;
+import android.database.Cursor;
+import android.provider.BaseColumns;
 
-import java.io.File;
+import com.langme.newmetrics.DAO.FichierDAO;
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -24,7 +21,7 @@ public class SheetContent {
     /**
      * An array of sample (dummy) items.
      */
-    public static final List<SheetItem> ITEMS = new ArrayList<SheetItem>();
+    public static List<SheetItem> ITEMS = new ArrayList<SheetItem>();
     private static String TAG = "SheetContent";
     /**
      * A map of sample (dummy) items, by ID.
@@ -34,7 +31,7 @@ public class SheetContent {
     private static final int COUNT = 25;
 
     static {
-        File directory = new File((Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DOWNLOADS));
+        /*File directory = new File((Environment.getExternalStorageDirectory() + "/" + Environment.DIRECTORY_DOWNLOADS));
         File[] files = directory.listFiles();
         int i = 0;
         for (File file: files) {
@@ -44,16 +41,25 @@ public class SheetContent {
                 Log.d(TAG, "create item sheet: " + item);
                 i++;
             }
-        }
+        }*/
     }
 
-    private static void addItem(SheetItem item) {
+    public static void addItem(SheetItem item) {
         ITEMS.add(item);
         ITEM_MAP.put(item.id, item);
     }
 
-    private static SheetItem createSheetItem(int position) {
-        return new SheetItem(String.valueOf(position), "Item " + position, makeDetails(position));
+    /**
+     * Creer un DummyItem à partir du curseur
+     * @param cursor
+     * @return
+     */
+    public static SheetItem createDummyItem(Cursor cursor) {
+        long id = cursor.getLong(cursor.getColumnIndex(BaseColumns._ID));
+        String name = cursor.getString(cursor.getColumnIndex(FichierDAO.COLUMN_NAME_NAME));
+        String date = cursor.getString(cursor.getColumnIndex(FichierDAO.COLUMN_NAME_DATE));
+        String path = cursor.getString(cursor.getColumnIndex(FichierDAO.COLUMN_PATH));
+        return new SheetItem(String.valueOf(id), name, date, path);
     }
 
     private static String makeDetails(int position) {
@@ -71,32 +77,28 @@ public class SheetContent {
     public static class SheetItem implements Serializable {
         public final String id;
         public final String name;
-        public final String path;
         public final String date;
+        public final String path;
 
-        public SheetItem(String id, String name, String path) {
+        public SheetItem(String id, String name, String date, String path) {
             this.id = id;
             this.name = name;
             this.path = path;
-            File file = new File(path);
-            SimpleDateFormat dateformat = new SimpleDateFormat("dd/MM/yyyy");
-            Date d = new Date(file.lastModified());
-            this.date = dateformat.format(d);
-        }
-
-        @Override
-        public String toString() {
-            return path;
+            //SimpleDateFormat dateformat = new SimpleDateFormat("dd/MM/yyyy");
+            //Date d = new Date(file.lastModified());
+            //this.date = dateformat.format(d);
+            this.date = date;
         }
 
         public String getId() {
             return id;
         }
-
         public String getName() {
             return name;
         }
-
+        public String getDate() {
+            return date;
+        }
         public String getPath() {
             return path;
         }

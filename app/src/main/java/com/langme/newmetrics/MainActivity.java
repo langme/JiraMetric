@@ -1,15 +1,16 @@
 package com.langme.newmetrics;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.BottomSheetDialogFragment;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -19,20 +20,35 @@ import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.facebook.stetho.Stetho;
+import com.langme.newmetrics.DAO.DataBaseCollection;
+import com.langme.newmetrics.DAO.FichierDAO;
+import com.langme.newmetrics.DAO.TaskDAO;
 import com.langme.newmetrics.dummy.DetailContent;
-import com.langme.newmetrics.dummy.ResumeItem;
 import com.langme.newmetrics.dummy.SheetContent;
 
+import org.apache.poi.hssf.usermodel.HSSFDateUtil;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellValue;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import static com.langme.newmetrics.Constantes.MyPREFERENCES;
 
@@ -50,6 +66,12 @@ public class MainActivity extends AppCompatActivity
     private static final int MY_PERMISSIONS_REQUEST = 1;
     private Fragment fragment;
     private FloatingActionButton fab;
+    private DataBaseCollection    dataBaseCollection = null;
+    private static final int REQUEST_CHOOSER = 1234;
+    private FichierDAO fichierDAO;
+    private ReadExcelFile task;
+    private TaskDAO taskDAO;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,16 +79,26 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        try {
+            Stetho.initializeWithDefaults(this);
+        } catch (Exception e) {
+            Log.e(TAG, "failed to initialize Stetho");
+        }
+
         if (isStoragePermissionGranted()) {
             if (savedInstanceState == null) {
                 fragmentManager = getSupportFragmentManager();
                 fragmentTransaction = fragmentManager.beginTransaction();
-                Fragment fragment = new SheetFragment();
+                fragment = new SheetFragment();
                 fragmentTransaction.add(R.id.fragmentLayout, fragment, "SHEET");
                 fragmentTransaction.commit();
             }
         }
 
+        dataBaseCollection = new DataBaseCollection(this);
+        dataBaseCollection.getReadableDatabase();
+        fichierDAO = new FichierDAO(getApplicationContext());
+        taskDAO = new TaskDAO(getApplicationContext());
 
         fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -97,17 +129,6 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         });
-
-        /*
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
-        toggle.syncState();
-
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
-        */
 
         SharedPreferences sharedpreferences = getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
         if (!Utils.CheckSharesPref(sharedpreferences)){
@@ -152,6 +173,7 @@ public class MainActivity extends AppCompatActivity
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Log.v(TAG, "R.id.action_settings");
             fragmentManager = getSupportFragmentManager();
             fragmentTransaction = fragmentManager.beginTransaction();
             fragment = new MySheetRecyclerViewAdapter.SettingsFragment();
@@ -161,31 +183,60 @@ public class MainActivity extends AppCompatActivity
             return true;
         }
 
+        if (id == R.id.action_import) {
+            Log.v(TAG, "R.id.action_import");
+            Intent getContentIntent = FileUtils.createGetContentIntent();
+            Intent intent = Intent.createChooser(getContentIntent, "Select a file");
+            startActivityForResult(intent, REQUEST_CHOOSER);
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case REQUEST_CHOOSER:
+                if (resultCode == RESULT_OK) {
+                    final Uri uri = data.getData();
+
+                    // Get the File path from the Uri
+                    String path = FileUtils.getPath(this, uri);
+                    Log.v(TAG, "REQUEST_CHOOSER : " + path);
+                    // Alternatively, use FileUtils.getFile(Context, Uri)
+                    if (path != null && FileUtils.isLocal(path)) {
+                        File file = new File(path);
+
+                        Log.v(TAG, "REQUEST_CHOOSER : insertion en base ");
+                        // insertion en base
+                        String id = String.valueOf(fichierDAO.getRowsNumber() + 1);
+                        SheetContent.SheetItem sheet = new SheetContent.SheetItem(id, file.getName(), String.valueOf(file.lastModified()), file.getAbsolutePath());
+                        if (!fichierDAO.isExistFile(file.getName())) {
+                            fichierDAO.create(sheet);
+                        } else {
+                            fichierDAO.update(sheet);
+                        }
+                        // // TODO: 02/08/2017 remplir la liste faire un update
+                        if (fragment instanceof SheetFragment) {
+                            Log.v(TAG, "REQUEST_CHOOSER : SheetFragment update ");
+                            SheetFragment.update();
+                        }
+
+                        if (!file.getPath().isEmpty()) {
+                            Log.v(TAG, "REQUEST_CHOOSER : read file " + file.getPath());
+                            task = new ReadExcelFile(file, fragment.getContext());
+                            task.execute();
+                        }
+                    }
+                }
+                break;
+        }
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
-        int id = item.getItemId();
-
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
-        }
-
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
@@ -197,7 +248,7 @@ public class MainActivity extends AppCompatActivity
                     Log.d(TAG, "Permission Grantedt: ");
                     fragmentManager = getSupportFragmentManager();
                     fragmentTransaction = fragmentManager.beginTransaction();
-                    Fragment fragment = new SheetFragment();
+                    fragment = new SheetFragment();
 
                     fragmentTransaction.replace(R.id.fragmentLayout,fragment);
                     fragmentTransaction.commitAllowingStateLoss ();
@@ -209,6 +260,10 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    /**
+     * Savoir si les permissions ont été accordées
+     * @return
+     */
     public  boolean isStoragePermissionGranted() {
         if (Build.VERSION.SDK_INT >= 23) {
             if (checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE)
@@ -232,29 +287,44 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onListFragmentInteraction(SheetContent.SheetItem item) {
-        Log.d("", "onListFragmentInteraction: " + item );
-        Bundle bundle = new Bundle();
-        bundle.putSerializable("item", item);
+    public void onListFragmentInteraction(SheetContent.SheetItem item, String action) {
+        if (action.matches("search")) {
+            Log.v(TAG, "search onList Interaction SheetContent: " + item.getName());
 
-        SharedPreferences sharedpreferences = getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
-        if (Utils.CheckSharesPref(sharedpreferences)) {
-            // on replace le fragment par le fragment detail
-            fragmentManager = getSupportFragmentManager();
-            fragmentTransaction = fragmentManager.beginTransaction();
-            fragment = new DetailSheetFragment();
-            fragment.setArguments(bundle);
-            fragmentTransaction.replace(R.id.fragmentLayout, fragment, "SHEET");
-            fragmentTransaction.addToBackStack("SHEET");
-            fragmentTransaction.commit();
+            SharedPreferences sharedpreferences = getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
+            if (Utils.CheckSharesPref(sharedpreferences)) {
+                Bundle bundle = new Bundle();
+                String[] nameFile = item.getPath().split("/");
+                Log.v(TAG, "search onList Interaction SheetContent: " + nameFile[nameFile.length - 1]);
+                bundle.putString("item", nameFile[nameFile.length - 1]);
+
+                // on replace le fragment par le fragment detail
+                fragmentManager = getSupportFragmentManager();
+                fragmentTransaction = fragmentManager.beginTransaction();
+                fragment = new DetailSheetFragment();
+                fragment.setArguments(bundle);
+                fragmentTransaction.replace(R.id.fragmentLayout, fragment, "SHEET");
+                fragmentTransaction.addToBackStack("SHEET");
+                fragmentTransaction.commit();
+            } else {
+                Toast.makeText(getBaseContext(), "La configuration n'est pas définie...", Toast.LENGTH_SHORT).show();
+            }
         } else {
-            Toast.makeText(getBaseContext(),"La configuration n'est pas définie...", Toast.LENGTH_SHORT).show();
+            Log.v(TAG, "del onList Interaction SheetContent: " + item.getName());
+            if (taskDAO.deleteAll(Integer.parseInt(item.getId()))) {
+                Log.v(TAG, "del file " + item.getId());
+                fichierDAO.delete(Integer.parseInt(item.getId()));
+                Log.v(TAG, "del onList Interaction SheetContent : SheetFragment.update()");
+                if (fragment instanceof SheetFragment) {
+                    SheetFragment.update();
+                }
+            }
         }
     }
 
     @Override
     public void onListFragmentInteraction(DetailContent.DetailItem item) {
-        Log.d("", "onListFragmentInteraction: " + item );
+        Log.v(TAG, "search onList Interaction DetailContent: " + item.getNameTask());
         Bundle bundle = new Bundle();
         bundle.putSerializable("item", item);
 
@@ -269,12 +339,10 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onFragmentInteraction(Uri uri) {
-
     }
 
     @Override
     public void onResumeClicked(int position) {
-
     }
 
     public void showFloatingActionButton() {
@@ -284,4 +352,144 @@ public class MainActivity extends AppCompatActivity
     public void hideFloatingActionButton() {
         fab.hide();
     }
+
+    public class ReadExcelFile extends AsyncTask {
+        protected ProgressDialog progressDialog;
+        private File file;
+        private Context mContext;
+
+        public ReadExcelFile(File fichier, Context context) {
+            file = fichier;
+            this.mContext=context;
+        }
+
+        @Override
+        protected Object doInBackground(Object[] objects) {
+            Log.d(TAG, "doInBackground: " + file.getAbsoluteFile());
+            try {
+                FileInputStream stream = new FileInputStream(file);
+                XSSFWorkbook workbook = new XSSFWorkbook(stream);
+                XSSFSheet sheet = workbook.getSheetAt(0);
+                int rowsCount = sheet.getPhysicalNumberOfRows();
+                FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
+                int finishTask = 1;
+                SharedPreferences sharedpreferences = getApplication().getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
+                int nameId = Utils.findAlphaIndex(sharedpreferences.getString("name", "").toLowerCase());
+                int stateId = Utils.findAlphaIndex(sharedpreferences.getString("state", "").toLowerCase());
+                int criticId = Utils.findAlphaIndex(sharedpreferences.getString("critic", "").toLowerCase());
+                int createId = Utils.findAlphaIndex(sharedpreferences.getString("create", "").toLowerCase());
+                int typoId = Utils.findAlphaIndex(sharedpreferences.getString("typo", "").toLowerCase());
+                int wishId = Utils.findAlphaIndex(sharedpreferences.getString("wish", "").toLowerCase());
+                int valideId = Utils.findAlphaIndex(sharedpreferences.getString("valide", "").toLowerCase());
+                int infoId = Utils.findAlphaIndex(sharedpreferences.getString("info", "").toLowerCase());
+                int clotureId = Utils.findAlphaIndex(sharedpreferences.getString("cloture", "").toLowerCase());
+
+                Log.v(TAG, "doInBackground: find sharedpreferences...");
+                for (int r = 1; r<rowsCount; r++) {
+                    Row row = sheet.getRow(r);
+                    String nameTask = getCellAsString(row, nameId, formulaEvaluator);//B
+                    String state = getCellAsString(row, stateId, formulaEvaluator); //C
+                    String criticity = getCellAsString(row, criticId, formulaEvaluator); //D
+                    String typology = getCellAsString(row, typoId, formulaEvaluator); //I
+                    String createTask = getCellAsString(row, createId, formulaEvaluator);
+                    String validatedTask = getCellAsString(row, valideId, formulaEvaluator);//L
+                    String infSystem = getCellAsString(row, infoId, formulaEvaluator);//P
+                    String clotureTask = getCellAsString(row, clotureId, formulaEvaluator); //R
+                    String wishDateTask = getCellAsString(row, wishId, formulaEvaluator); //K
+
+                    Log.v(TAG, "doInBackground: find each cell for row : " + r);
+                    if (!createTask.isEmpty() && !validatedTask.isEmpty()){
+                        Log.v(TAG, "doInBackground: ligne validée : " + r);
+                        SimpleDateFormat dateformat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH);
+                        try {
+                            int if_fichier = fichierDAO.getID(file.getName());
+                            Date dateEnd = dateformat.parse(validatedTask);
+                            Date dateBegin = dateformat.parse(createTask);
+                            String ecart = String.valueOf(Utils.getWorkingDaysBetweenTwoDates(dateBegin, dateEnd));
+                            DetailContent.DetailItem detailItem = new DetailContent.DetailItem(String.valueOf(finishTask), nameTask, createTask, validatedTask, ecart,
+                                    state, typology, criticity, infSystem, clotureTask, wishDateTask, String.valueOf(if_fichier));
+                            detailItem.setFinalState(Utils.manageConformity(detailItem));
+
+                            String[] num = nameTask.split("-");
+                            if (taskDAO.isExistTask(Integer.parseInt(num[1]), if_fichier)) {
+                                taskDAO.updateTask(detailItem);
+                            } else {
+                                taskDAO.create(detailItem);
+                            }
+
+                            finishTask ++;
+                        } catch (Exception ex) {
+                            Log.e(TAG, "nameTask : " + nameTask + " err :" + ex);
+                        }
+                    } else {
+                        Log.e(TAG, "doInBackground: ligne non validée : " + r);
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "onClick: " +e.toString());
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            progressDialog = new ProgressDialog(this.mContext);
+            progressDialog.setMessage("Traitement du Fichier Excel");
+            progressDialog.show();
+        }
+
+        @Override
+        protected void onPostExecute(Object o) {
+            super.onPostExecute(o);
+            progressDialog.dismiss();
+            Log.v(TAG, "onPostExecute: finish : ");
+        }
+    }
+
+    public static String getCellAsString(Row row, int c, FormulaEvaluator formulaEvaluator) {
+        String value = "";
+        try {
+            Cell cell = row.getCell(c);
+            CellValue cellValue = formulaEvaluator.evaluate(cell);
+
+            if (cellValue != null) {
+                switch (cellValue.getCellType()) {
+                    case Cell.CELL_TYPE_BOOLEAN:
+                        value = "" + cellValue.getBooleanValue();
+                        break;
+                    case Cell.CELL_TYPE_NUMERIC:
+                        if (HSSFDateUtil.isCellDateFormatted(row.getCell(c))) {
+                            value = row.getCell(c).getDateCellValue().toString();
+                        } else {
+                            value = "";
+                        }
+                        break;
+                    case Cell.CELL_TYPE_STRING:
+                        if (cellValue.getStringValue().contains("/")){
+                            String changeDate = Utils.replaceMonth(cellValue.getStringValue());
+                            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yy hh:mm a", Locale.FRENCH);
+                            try {
+                                Date date = formatter.parse(changeDate);
+                                Log.v(TAG, "getCellAsString: "+ date);
+                                value = date.toString();
+                            }catch (ParseException e) {
+                                Log.e(TAG, "row : " + row.toString() +" error CELL_TYPE_STRING: " + e);
+                            }
+                        } else {
+                            value = "" + cellValue.getStringValue();
+                        }
+                        break;
+                    default:
+                }
+            } else {
+                Log.d(TAG, "cell empty: ");
+            }
+        } catch (NullPointerException e) {
+            /* proper error handling should be here */
+            Log.e(TAG, "getCellAsString: row " + row + " col " + c + " error : " + e.toString());
+        }
+        return value;
+    }
+
 }

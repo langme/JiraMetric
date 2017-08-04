@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.langme.newmetrics.DAO.TaskDAO;
 import com.langme.newmetrics.dummy.DetailContent;
 
 import java.text.ParseException;
@@ -24,42 +25,16 @@ import java.util.Locale;
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
  * {@link IndicatorDetailSheetFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link IndicatorDetailSheetFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
 public class IndicatorDetailSheetFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
     private static final String TAG = "Indicator";
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
     private DetailContent.DetailItem item;
     private OnFragmentInteractionListener mListener;
+    private TaskDAO taskDAO;
 
     public IndicatorDetailSheetFragment() {
         // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment IndicatorDetailSheetFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static IndicatorDetailSheetFragment newInstance(String param1, String param2) {
-        IndicatorDetailSheetFragment fragment = new IndicatorDetailSheetFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
     }
 
     @Override
@@ -67,7 +42,8 @@ public class IndicatorDetailSheetFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         if (getArguments() != null) {
-            item = (DetailContent.DetailItem)getArguments().getSerializable("item");
+            taskDAO = new TaskDAO(getContext());
+            item = (DetailContent.DetailItem) getArguments().getSerializable("item");
         }
     }
 
@@ -129,6 +105,7 @@ public class IndicatorDetailSheetFragment extends Fragment {
                 item.setFinalState(Constantes.State.CONFORME);
                 res.setText(item.finalState.toString());
                 res.setTextColor(getActivity().getApplicationContext().getResources().getColor(android.R.color.holo_green_light));
+                taskDAO.updateTask(item);
             }
         });
 
@@ -139,6 +116,7 @@ public class IndicatorDetailSheetFragment extends Fragment {
                 item.setFinalState(Constantes.State.NONCONFORME);
                 res.setText(item.finalState.toString());
                 res.setTextColor(getActivity().getApplicationContext().getResources().getColor(android.R.color.holo_red_light));
+                taskDAO.updateTask(item);
             }
         });
         return v;

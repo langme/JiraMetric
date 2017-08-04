@@ -5,6 +5,7 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="action_settings">Settings</string>
+    <string name="action_import">Import</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">- - - -</string>
@@ -34,4 +35,5 @@
     <string name="clotureTask">date de cloture :</string>
     <string name="wishDateTask">date de livraison souhaitée :</string>
 
+    <string name="internal_storage">Internal storage</string>
 </resources>

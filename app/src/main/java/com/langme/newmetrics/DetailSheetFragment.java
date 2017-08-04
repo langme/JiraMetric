@@ -20,6 +20,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.langme.newmetrics.DAO.FichierDAO;
+import com.langme.newmetrics.DAO.TaskDAO;
 import com.langme.newmetrics.dummy.DetailContent;
 import com.langme.newmetrics.dummy.DetailContent.DetailItem;
 import com.langme.newmetrics.dummy.SheetContent;
@@ -69,13 +71,13 @@ public class DetailSheetFragment extends Fragment {
     // TODO: Customize parameter argument names
     private static final String ARG_PATH= "filePath";
     private static final String TAG= "DetailSheetFragment";
-    // TODO: Customize parameters
-    private String mFilePath;
-    private ReadExcelFile task;
     private OnListFragmentInteractionListener mListener;
     public RecyclerView recyclerView;
-    public MyDetailSheetRecyclerViewAdapter mAdapter;
+    public static MyDetailSheetRecyclerViewAdapter mAdapter;
     private File excelFile;
+    private TaskDAO taskDAO;
+    private FichierDAO fichierDAO;
+    private String fileName;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -99,12 +101,12 @@ public class DetailSheetFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         if (getArguments() != null) {
-            SheetContent.SheetItem item = (SheetContent.SheetItem)getArguments().getSerializable("item");
-            mFilePath = item.path;
-            if (!mFilePath.isEmpty()) {
-                File file = new File(mFilePath);
-                task = new ReadExcelFile(file);
-                task.execute();
+            String fileName = getArguments().getString("item");
+            if (!fileName.isEmpty()) {
+                taskDAO = new TaskDAO(getContext());
+                this.fileName = fileName;
+            } else {
+                Log.e(TAG, "onCreate: param vide");
             }
         }
     }
@@ -118,11 +120,35 @@ public class DetailSheetFragment extends Fragment {
         if (view instanceof RecyclerView) {
             Context context = view.getContext();
             recyclerView = (RecyclerView) view;
+            fichierDAO = new FichierDAO(getContext());
+            if (fileName != null && !fileName.isEmpty()) {
+                taskDAO.findAllTask(fichierDAO.getID(fileName));
+            } else {
+                Log.e(TAG, "onStart: ");
+            }
+
             //recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             mAdapter = new MyDetailSheetRecyclerViewAdapter(DetailContent.ITEMS, mListener);
             recyclerView.setAdapter(mAdapter);
         }
         return view;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (fileName != null && !fileName.isEmpty()) {
+            taskDAO.findAllTask(fichierDAO.getID(fileName));
+            mAdapter.notifyDataSetChanged();
+        } else {
+            Log.e(TAG, "onStart: ");
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        DetailContent.ITEMS.clear();
     }
 
     @Override
@@ -190,137 +216,6 @@ public class DetailSheetFragment extends Fragment {
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
         void onListFragmentInteraction(DetailContent.DetailItem item);
-    }
-
-    public class ReadExcelFile extends AsyncTask {
-        protected ProgressDialog progressDialog;
-        private File file;
-
-        public ReadExcelFile(File fichier) {
-            file = fichier;
-        }
-
-        @Override
-        protected Object doInBackground(Object[] objects) {
-            try {
-                FileInputStream stream = new FileInputStream(file);
-                XSSFWorkbook workbook = new XSSFWorkbook(stream);
-                XSSFSheet sheet = workbook.getSheetAt(0);
-                int rowsCount = sheet.getPhysicalNumberOfRows();
-                FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
-                int finishTask = 1;
-                SharedPreferences sharedpreferences = getActivity().getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
-                int nameId = Utils.findAlphaIndex(sharedpreferences.getString("name", "").toLowerCase());
-                int stateId = Utils.findAlphaIndex(sharedpreferences.getString("state", "").toLowerCase());
-                int criticId = Utils.findAlphaIndex(sharedpreferences.getString("critic", "").toLowerCase());
-                int createId = Utils.findAlphaIndex(sharedpreferences.getString("create", "").toLowerCase());
-                int typoId = Utils.findAlphaIndex(sharedpreferences.getString("typo", "").toLowerCase());
-                int wishId = Utils.findAlphaIndex(sharedpreferences.getString("wish", "").toLowerCase());
-                int valideId = Utils.findAlphaIndex(sharedpreferences.getString("valide", "").toLowerCase());
-                int infoId = Utils.findAlphaIndex(sharedpreferences.getString("info", "").toLowerCase());
-                int clotureId = Utils.findAlphaIndex(sharedpreferences.getString("cloture", "").toLowerCase());
-
-                for (int r = 1; r<rowsCount; r++) {
-                    Row row = sheet.getRow(r);
-                    String nameTask = getCellAsString(row, nameId, formulaEvaluator);//B
-                    String state = getCellAsString(row, stateId, formulaEvaluator); //C
-                    String criticity = getCellAsString(row, criticId, formulaEvaluator); //D
-                    String typology = getCellAsString(row, typoId, formulaEvaluator); //I
-                    String createTask = getCellAsString(row, createId, formulaEvaluator);
-                    String validatedTask = getCellAsString(row, valideId, formulaEvaluator);//L
-                    String infSystem = getCellAsString(row, infoId, formulaEvaluator);//P
-                    String clotureTask = getCellAsString(row, clotureId, formulaEvaluator); //R
-                    String wishDateTask = getCellAsString(row, wishId, formulaEvaluator); //K
-
-                    if (!createTask.isEmpty() && !validatedTask.isEmpty()){
-                        Log.i(TAG, "doInBackground: ligne : " + r);
-                        // TODO: 10/07/2017 AJOUTER DANS DETAILITER
-                        //if (!DetailContent.ITEMS.isEmpty()) {
-                            SimpleDateFormat dateformat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH);
-                            try {
-                                Date dateEnd = dateformat.parse(validatedTask);
-                                Date dateBegin = dateformat.parse(createTask);
-                                String ecart = String.valueOf(Utils.getWorkingDaysBetweenTwoDates(dateBegin, dateEnd));
-                                DetailItem detailItem = new DetailItem(String.valueOf(finishTask), nameTask, createTask, validatedTask, ecart,
-                                        state, typology, criticity, infSystem, clotureTask, wishDateTask);
-                                detailItem.setFinalState(Utils.manageConformity(detailItem));
-                                DetailContent.addItem(detailItem);
-                                finishTask ++;
-                            } catch (Exception ex) {
-                                Log.e(TAG, "nameTask : " + nameTask + " err :" + ex);
-                            }
-                        /*} else {
-                            Log.e(TAG, "doInBackground: DetailContent empty");
-                        }*/
-                    } else {
-                        Log.i(TAG, "doInBackground: ligne : " + r + "vide");
-                    }
-                }
-            } catch (Exception e) {
-            /* proper exception handling to be here */
-                Log.e(TAG, "onClick: " +e.toString());
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            // TODO: 06/07/2017 tester la validiter du fichier
-            progressDialog = ProgressDialog.show(getActivity(), "Traitement du Fichier Excel", "", true, false);
-        }
-
-        @Override
-        protected void onPostExecute(Object o) {
-            super.onPostExecute(o);
-            progressDialog.dismiss();
-            mAdapter.notifyDataSetChanged();
-        }
-    }
-
-    public static String getCellAsString(Row row, int c, FormulaEvaluator formulaEvaluator) {
-        String value = "";
-        try {
-            Cell cell = row.getCell(c);
-            CellValue cellValue = formulaEvaluator.evaluate(cell);
-
-            if (cellValue != null) {
-                switch (cellValue.getCellType()) {
-                    case Cell.CELL_TYPE_BOOLEAN:
-                        value = "" + cellValue.getBooleanValue();
-                        break;
-                    case Cell.CELL_TYPE_NUMERIC:
-                        if (HSSFDateUtil.isCellDateFormatted(row.getCell(c))) {
-                            value = row.getCell(c).getDateCellValue().toString();
-                        } else {
-                            value = "";
-                        }
-                        break;
-                    case Cell.CELL_TYPE_STRING:
-                        if (cellValue.getStringValue().contains("/")){
-                            String changeDate = Utils.replaceMonth(cellValue.getStringValue());
-                            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yy hh:mm a", Locale.FRENCH);
-                            try {
-                                Date date = formatter.parse(changeDate);
-                                Log.d(TAG, "getCellAsString: "+ date);
-                                value = date.toString();
-                            }catch (ParseException e) {
-                                Log.e(TAG, "row : " + row.toString() +" error CELL_TYPE_STRING: " + e);
-                            }
-                        } else {
-                            value = "" + cellValue.getStringValue();
-                        }
-                        break;
-                    default:
-                }
-            } else {
-                Log.d(TAG, "cell empty: ");
-            }
-        } catch (NullPointerException e) {
-            /* proper error handling should be here */
-            Log.e(TAG, "getCellAsString: row " + row + " col " + c + " error : " + e.toString());
-        }
-        return value;
     }
 
     private boolean generateExcel(List<DetailItem> list){
