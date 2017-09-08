@@ -112,11 +112,17 @@ public class ResumeListDialogFragment extends BottomSheetDialogFragment {
         ArrayList<Entry> entries = new ArrayList<>();
         ArrayList<String> pieEntryLabels = new ArrayList<>();
 
-        float nbBloquante = Utils.computeBloquante(Constantes.type.RETAIL, itemList)*100;
-        float nbMajeur = Utils.computeMajor(Constantes.type.RETAIL, itemList)*100;
-        float nbMineur = Utils.computeMinor(Constantes.type.RETAIL, itemList)*100;
-        float nbProjet = Utils.computeProject(Constantes.type.RETAIL, itemList)*100;
-        float nbSupport = Utils.computeSupport(Constantes.type.RETAIL, itemList)*100;
+        float nbBloquante = 0;
+        float nbMajeur = 0;
+        float nbMineur = 0;
+        float nbProjet = 0;
+        float nbSupport = 0;
+
+        nbBloquante = Utils.computeBloquante(Constantes.type.RETAIL, itemList)*100;
+        nbMajeur = Utils.computeMajor(Constantes.type.RETAIL, itemList)*100;
+        nbMineur = Utils.computeMinor(Constantes.type.RETAIL, itemList)*100;
+        nbProjet = Utils.computeProject(Constantes.type.RETAIL, itemList)*100;
+        nbSupport = Utils.computeSupport(Constantes.type.RETAIL, itemList)*100;
 
         pieEntryLabels.add("IR01 Bloquantes");
         entries.add(new BarEntry(nbBloquante, 0));

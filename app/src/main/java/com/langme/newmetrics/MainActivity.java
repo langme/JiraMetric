@@ -43,6 +43,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -152,6 +153,14 @@ public class MainActivity extends AppCompatActivity
         if (count == 0) {
             super.onBackPressed();
             //additional code
+            FragmentManager fragmentManager = MainActivity.this.getSupportFragmentManager();
+            List<Fragment> fragments = fragmentManager.getFragments();
+            if(fragments != null){
+                for(Fragment fra : fragments){
+                    if(fra != null && fra.isVisible())
+                        fragment = fra;
+                }
+            }
         } else {
             getFragmentManager().popBackStack();
         }
@@ -202,31 +211,60 @@ public class MainActivity extends AppCompatActivity
                     final Uri uri = data.getData();
 
                     // Get the File path from the Uri
-                    String path = FileUtils.getPath(this, uri);
-                    Log.v(TAG, "REQUEST_CHOOSER : " + path);
+                    //String path = FileUtils.getPath(this, uri);
+                    Log.v(TAG, "REQUEST_CHOOSER : " + uri.getPath());
                     // Alternatively, use FileUtils.getFile(Context, Uri)
-                    if (path != null && FileUtils.isLocal(path)) {
-                        File file = new File(path);
+                    if (uri != null && FileUtils.isLocal(uri.getPath())) {
+                        File file = new File(uri.getPath());
+                        String nameFile;
+                        long dateFile;
+                        String pathFile;
+                        if (file != null){
+                            nameFile = file.getName();
+                            dateFile = file.lastModified();
+                            pathFile = file.getAbsolutePath();
+                        } else {
+                            nameFile = uri.getLastPathSegment();
+                            dateFile = 0;
+                            pathFile = uri.getPath();
+                        }
 
                         Log.v(TAG, "REQUEST_CHOOSER : insertion en base ");
                         // insertion en base
                         String id = String.valueOf(fichierDAO.getRowsNumber() + 1);
-                        SheetContent.SheetItem sheet = new SheetContent.SheetItem(id, file.getName(), String.valueOf(file.lastModified()), file.getAbsolutePath());
-                        if (!fichierDAO.isExistFile(file.getName())) {
+                        final SheetContent.SheetItem sheet = new SheetContent.SheetItem(id, nameFile, String.valueOf(dateFile), pathFile);
+
+                        if (!fichierDAO.isExistFile(nameFile)) {
                             fichierDAO.create(sheet);
                         } else {
                             fichierDAO.update(sheet);
                         }
+
+                        if (!pathFile.isEmpty()) {
+                            Log.v(TAG, "REQUEST_CHOOSER : read file " + pathFile);
+                            task = new ReadExcelFile(uri, fragment.getContext(), new MyInterface(){
+                                @Override
+                                public void myMethod(boolean result) {
+                                    if (!result) {
+                                        // suppression en base du fichier + update
+                                        Log.d(TAG, "myMethod f : " + fichierDAO.getID(sheet.getName()));
+                                        Log.d(TAG, "myMethod: " + fichierDAO.delete(Integer.valueOf(fichierDAO.getID(sheet.getName()))));
+
+                                        // // TODO: 02/08/2017 remplir la liste faire un update
+                                        if (fragment instanceof SheetFragment) {
+                                            Log.v(TAG, "REQUEST_CHOOSER : SheetFragment update ");
+                                            SheetFragment.update();
+                                        }
+                                    }
+                                }
+                            });
+                            task.execute();
+                        }
+
                         // // TODO: 02/08/2017 remplir la liste faire un update
                         if (fragment instanceof SheetFragment) {
                             Log.v(TAG, "REQUEST_CHOOSER : SheetFragment update ");
                             SheetFragment.update();
-                        }
-
-                        if (!file.getPath().isEmpty()) {
-                            Log.v(TAG, "REQUEST_CHOOSER : read file " + file.getPath());
-                            task = new ReadExcelFile(file, fragment.getContext());
-                            task.execute();
                         }
                     }
                 }
@@ -353,26 +391,35 @@ public class MainActivity extends AppCompatActivity
         fab.hide();
     }
 
-    public class ReadExcelFile extends AsyncTask {
-        protected ProgressDialog progressDialog;
-        private File file;
-        private Context mContext;
+    public interface MyInterface {
+        public void myMethod(boolean result);
+    }
 
-        public ReadExcelFile(File fichier, Context context) {
-            file = fichier;
+    public class ReadExcelFile extends AsyncTask<Void, Void, Boolean> {
+        protected ProgressDialog progressDialog;
+        private Uri uri;
+        private Context mContext;
+        private String erreur;
+        private MyInterface mListener;
+
+        public ReadExcelFile(Uri uriFile, Context context, MyInterface mListener) {
+            this.uri = uriFile;
             this.mContext=context;
+            this.mListener  = mListener;
         }
 
         @Override
-        protected Object doInBackground(Object[] objects) {
-            Log.d(TAG, "doInBackground: " + file.getAbsoluteFile());
+        protected Boolean doInBackground(Void... params) {
+            boolean res = true;
             try {
-                FileInputStream stream = new FileInputStream(file);
+                Log.d(TAG, "doInBackground: " + this.uri.getPath());
+                InputStream stream = getContentResolver().openInputStream(uri);
                 XSSFWorkbook workbook = new XSSFWorkbook(stream);
                 XSSFSheet sheet = workbook.getSheetAt(0);
                 int rowsCount = sheet.getPhysicalNumberOfRows();
                 FormulaEvaluator formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
                 int finishTask = 1;
+                Log.d(TAG, "doInBackground: start sharedpreferences...");
                 SharedPreferences sharedpreferences = getApplication().getSharedPreferences(MyPREFERENCES, Context.MODE_PRIVATE);
                 int nameId = Utils.findAlphaIndex(sharedpreferences.getString("name", "").toLowerCase());
                 int stateId = Utils.findAlphaIndex(sharedpreferences.getString("state", "").toLowerCase());
@@ -384,7 +431,7 @@ public class MainActivity extends AppCompatActivity
                 int infoId = Utils.findAlphaIndex(sharedpreferences.getString("info", "").toLowerCase());
                 int clotureId = Utils.findAlphaIndex(sharedpreferences.getString("cloture", "").toLowerCase());
 
-                Log.v(TAG, "doInBackground: find sharedpreferences...");
+                Log.d(TAG, "doInBackground: find sharedpreferences...");
                 for (int r = 1; r<rowsCount; r++) {
                     Row row = sheet.getRow(r);
                     String nameTask = getCellAsString(row, nameId, formulaEvaluator);//B
@@ -397,12 +444,14 @@ public class MainActivity extends AppCompatActivity
                     String clotureTask = getCellAsString(row, clotureId, formulaEvaluator); //R
                     String wishDateTask = getCellAsString(row, wishId, formulaEvaluator); //K
 
-                    Log.v(TAG, "doInBackground: find each cell for row : " + r);
+                    Log.d(TAG, "doInBackground: find each cell for row : " + r);
                     if (!createTask.isEmpty() && !validatedTask.isEmpty()){
-                        Log.v(TAG, "doInBackground: ligne validée : " + r);
+                        Log.d(TAG, "doInBackground: ligne validée : " + r);
                         SimpleDateFormat dateformat = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.ENGLISH);
                         try {
-                            int if_fichier = fichierDAO.getID(file.getName());
+                            // connaitre le nom du fchier
+                            String[] pathFile = this.uri.getLastPathSegment().split("/");
+                            int if_fichier = fichierDAO.getID(pathFile[pathFile.length-1]);
                             Date dateEnd = dateformat.parse(validatedTask);
                             Date dateBegin = dateformat.parse(createTask);
                             String ecart = String.valueOf(Utils.getWorkingDaysBetweenTwoDates(dateBegin, dateEnd));
@@ -426,9 +475,11 @@ public class MainActivity extends AppCompatActivity
                     }
                 }
             } catch (Exception e) {
+                res = false;
+                this.erreur = e.toString();
                 Log.e(TAG, "onClick: " +e.toString());
             }
-            return null;
+            return res;
         }
 
         @Override
@@ -440,10 +491,16 @@ public class MainActivity extends AppCompatActivity
         }
 
         @Override
-        protected void onPostExecute(Object o) {
-            super.onPostExecute(o);
+        protected void onPostExecute(Boolean result) {
             progressDialog.dismiss();
             Log.v(TAG, "onPostExecute: finish : ");
+            if (mListener != null){
+                mListener.myMethod(result);
+            }
+            if (!result){
+                mListener.myMethod(result);
+                Toast.makeText(this.mContext, "Erreur : "  + this.erreur, Toast.LENGTH_LONG).show();
+            }
         }
     }
 

@@ -198,7 +198,9 @@ public class Utils {
 
         if (yearWish == yearFinish){
             // true
-            if (monthWish >= monthFinish){
+            if (monthWish > monthFinish) {
+                return true;
+            } else if (monthWish == monthFinish){
                 if (dayWish >= dayFinish){
                     return true;
                 }
@@ -473,7 +475,9 @@ public class Utils {
         }
 
         Log.d(TAG, "computeBloquante -> " + resConforme + " Conforme: " + resNoConforme + " Non Conformes: ");
-        res = resConforme/resTotal;
+        if (resTotal != 0) {
+            res = resConforme / resTotal;
+        }
         return res;
     }
 
@@ -508,7 +512,9 @@ public class Utils {
         }
 
         Log.d(TAG, "computeMajor -> " + resConforme + " Conforme: " + resNoConforme + " Non Conformes: ");
-        res = resConforme/resTotal;
+        if (resTotal != 0) {
+            res = resConforme / resTotal;
+        }
         return res;
     }
 
@@ -543,7 +549,9 @@ public class Utils {
         }
 
         Log.d(TAG, "computeMinor -> " + resConforme + " Conforme: " + resNoConforme + " Non Conformes: ");
-        res = resConforme/resTotal;
+        if (resTotal != 0) {
+            res = resConforme / resTotal;
+        }
         return res;
     }
 
@@ -566,11 +574,7 @@ public class Utils {
         }
         for (DetailContent.DetailItem it : itemList) {
             if (it.getInfSystem().matches(typeDefine)) {
-                if (!(it.getTypology().matches("Information")
-                        || it.getTypology().matches("Demande intervention")
-                        || it.getTypology().matches("Assistance BI Query")
-                        || (it.getTypology().matches("Execution requete") && it.getInfSystem().matches("SI_Nantes"))
-                        || it.getTypology().matches("Administrateur User BO"))) {
+                if (it.getTypology().matches("Projet")){
                     if (it.getFinalState() == Constantes.State.CONFORME){
                         resConforme++;
                     } else {
@@ -582,7 +586,9 @@ public class Utils {
         }
 
         Log.d(TAG, "computeProjet-> " + resConforme + " Conforme: " + resNoConforme + " Non Conformes: ");
-        res = resConforme/resTotal;
+        if (resTotal != 0) {
+            res = resConforme / resTotal;
+        }
         return res;
     }
     public static float computeSupport(Constantes.type type,List<DetailContent.DetailItem>  itemList){
@@ -602,7 +608,8 @@ public class Utils {
                         || it.getTypology().matches("Demande intervention")
                         || it.getTypology().matches("Assistance BI Query")
                         || (it.getTypology().matches("Execution requete") && it.getInfSystem().matches("SI_Nantes"))
-                        || it.getTypology().matches("Administrateur User BO")) {
+                        || it.getTypology().matches("Administrateur User BO")
+                        || it.getTypology().matches("Base de donnees Admin")){
                     if (it.getFinalState() == Constantes.State.CONFORME){
                         resConforme++;
                     } else {
@@ -614,7 +621,9 @@ public class Utils {
         }
 
         Log.d(TAG, "computeSupport -> " + resConforme + " Conforme: " + resNoConforme + " Non Conformes: ");
-        res = resConforme/resTotal;
+        if (resTotal != 0) {
+            res = resConforme / resTotal;
+        }
         return res;
     }
 }
